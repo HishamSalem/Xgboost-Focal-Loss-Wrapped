@@ -1,0 +1,40 @@
+import pandas as pd
+import numpy as np
+from sklearn.metrics import roc_auc_score, precision_recall_curve, auc
+
+def calculate_auc_pr(y_true, y_scores):
+    precision, recall, _ = precision_recall_curve(y_true, y_scores)
+    return auc(recall, precision)
+
+def calculate_auc_per_bin(data, features, target, predicted_probs, metric='auc_roc'):
+    auc_per_bin = []
+    
+    for feature in features:
+        bins = data[feature].unique()
+        for bin_value in bins:
+            bin_mask = data[feature] == bin_value
+            y_true = data.loc[bin_mask, target]
+            y_scores = predicted_probs[bin_mask]
+            if metric == 'auc_roc':
+                auc_value = roc_auc_score(y_true, y_scores)
+            elif metric == 'auc_pr':
+                auc_value = calculate_auc_pr(y_true, y_scores)
+            else:
+                raise ValueError("Unsupported metric. Use 'auc_roc' or 'auc_pr'.")
+            auc_per_bin.append({
+                'feature': feature,
+                'bin': bin_value,
+                'auc': auc_value
+            })
+    
+    auc_df = pd.DataFrame(auc_per_bin)
+    return auc_df
+
+def calculate_feature_statistics(auc_df):
+    feature_stats = auc_df.groupby('feature')['auc'].agg(['min', 'max', 'mean', 'std']).reset_index()
+    return feature_stats
+
+def evaluate_model(data, features, target, predicted_probs, metric='auc_roc'):
+    auc_df = calculate_auc_per_bin(data, features, target, predicted_probs, metric)
+    feature_stats = calculate_feature_statistics(auc_df)
+    return auc_df, feature_stats
