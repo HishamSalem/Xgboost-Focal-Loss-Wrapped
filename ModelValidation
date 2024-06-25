@@ -1,13 +1,12 @@
-
-def calculate_auc_per_bin(data, feature_cols, target_col, predicted_probs_col, metric='auc_roc'):
+def calculate_auc_per_bin(data, features, target, predicted_probs, metric='auc_roc'):
     auc_per_bin = []
     
-    for feature in feature_cols:
+    for feature in features:
         bins = data[feature].unique()
         for bin_value in bins:
             bin_mask = data[feature] == bin_value
-            y_true = data.loc[bin_mask, target_col]
-            y_scores = data.loc[bin_mask, predicted_probs_col]
+            y_true = target[bin_mask]
+            y_scores = predicted_probs[bin_mask]
             if metric == 'auc_roc':
                 auc_value = roc_auc_score(y_true, y_scores)
             elif metric == 'auc_pr':
@@ -27,7 +26,7 @@ def calculate_feature_statistics(auc_df):
     feature_stats = auc_df.groupby('feature')['auc'].agg(['min', 'max', 'mean', 'std']).reset_index()
     return feature_stats
 
-def evaluate_model(data, feature_cols, target_col, predicted_probs_col, metric='auc_roc'):
-    auc_df = calculate_auc_per_bin(data, feature_cols, target_col, predicted_probs_col, metric)
+def evaluate_model(data, features, target, predicted_probs, metric='auc_roc'):
+    auc_df = calculate_auc_per_bin(data, features, target, predicted_probs, metric)
     feature_stats = calculate_feature_statistics(auc_df)
     return auc_df, feature_stats
