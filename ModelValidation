@@ -7,16 +7,28 @@ def calculate_auc_per_bin(data, features, target, predicted_probs, metric='auc_r
             bin_mask = data[feature] == bin_value
             y_true = target[bin_mask]
             y_scores = predicted_probs[bin_mask]
-            if metric == 'auc_roc':
-                auc_value = roc_auc_score(y_true, y_scores)
-            elif metric == 'auc_pr':
-                auc_value = calculate_auc_pr(y_true, y_scores)
+            
+            positive_count = y_true.sum()
+            total_count = len(y_true)
+            positive_percentage = positive_count / total_count if total_count > 0 else 0
+
+            if len(np.unique(y_true)) == 1:
+                auc_value = 0.0
             else:
-                raise ValueError("Unsupported metric. Use 'auc_roc' or 'auc_pr'.")
+                if metric == 'auc_roc':
+                    auc_value = roc_auc_score(y_true, y_scores)
+                elif metric == 'auc_pr':
+                    auc_value = calculate_auc_pr(y_true, y_scores)
+                else:
+                    raise ValueError("Unsupported metric. Use 'auc_roc' or 'auc_pr'.")
+                    
             auc_per_bin.append({
                 'feature': feature,
                 'bin': bin_value,
-                'auc': auc_value
+                'auc': auc_value,
+                'positive_count': positive_count,
+                'total_count': total_count,
+                'positive_percentage': positive_percentage
             })
     
     auc_df = pd.DataFrame(auc_per_bin)
